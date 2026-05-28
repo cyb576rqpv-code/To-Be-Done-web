@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>備忘提醒</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 18px 96px;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      color: #4e5570;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 32%),
+        linear-gradient(135deg, #dff6ff 0%, #c9ebff 48%, #eef0ff 100%);
+    }
+
+    .app-card {
+      width: min(100%, 680px);
+      padding: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 22px 60px rgba(93, 137, 171, 0.22);
+      backdrop-filter: blur(14px);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3rem);
+      color: #5c8fc5;
+      letter-spacing: 0.04em;
+    }
+
+    .header p {
+      margin: 0;
+      color: #78839d;
+      font-size: 1rem;
+    }
+
+    .lavender-panel {
+      padding: 22px;
+      border-radius: 26px;
+      background: linear-gradient(145deg, #eee6ff 0%, #e3d6ff 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    #reminderInput {
+      flex: 1;
+      min-width: 0;
+      padding: 15px 17px;
+      border: 2px solid transparent;
+      border-radius: 18px;
+      outline: none;
+      color: #4e5570;
+      background: rgba(255, 255, 255, 0.78);
+      font-size: 1rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    #reminderInput::placeholder {
+      color: #9a93b5;
+    }
+
+    #reminderInput:focus {
+      border-color: #99cfff;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(153, 207, 255, 0.28);
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.03);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .add-btn {
+      padding: 0 20px;
+      color: #ffffff;
+      background: linear-gradient(135deg, #75b9f5, #8fa7ff);
+      box-shadow: 0 10px 20px rgba(117, 158, 229, 0.3);
+      white-space: nowrap;
+    }
+
+    .list-area {
+      min-height: 230px;
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.36);
+    }
+
+    .empty-message {
+      margin: 54px 12px;
+      text-align: center;
+      color: #8c86aa;
+      line-height: 1.7;
+    }
+
+    .reminder-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .reminder-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 15px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 10px 24px rgba(116, 104, 159, 0.12);
+    }
+
+    .reminder-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #8fa7ff;
+      cursor: pointer;
+    }
+
+    .reminder-text {
+      overflow-wrap: anywhere;
+      line-height: 1.55;
+      transition: color 0.2s ease, text-decoration-color 0.2s ease;
+    }
+
+    .reminder-item.completed .reminder-text {
+      color: #aaa4bd;
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: #9b96b0;
+    }
+
+    .item-actions {
+      display: none;
+      gap: 8px;
+    }
+
+    .reminder-item.completed .item-actions {
+      display: flex;
+    }
+
+    .small-btn {
+      padding: 9px 12px;
+      color: #ffffff;
+      font-size: 0.9rem;
+    }
+
+    .restore-btn {
+      background: linear-gradient(135deg, #9fdcc7, #7ccbb8);
+      box-shadow: 0 8px 16px rgba(124, 203, 184, 0.25);
+    }
+
+    .delete-btn {
+      background: linear-gradient(135deg, #ffadbd, #f28aa3);
+      box-shadow: 0 8px 16px rgba(242, 138, 163, 0.25);
+    }
+
+    .cat {
+      position: fixed;
+      right: 18px;
+      bottom: 14px;
+      z-index: 10;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 12px 28px rgba(92, 143, 197, 0.2);
+      font-size: clamp(2.8rem, 9vw, 4.8rem);
+      line-height: 1;
+      transform: rotate(-4deg);
+      user-select: none;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        align-items: flex-start;
+        padding-top: 22px;
+      }
+
+      .app-card {
+        padding: 22px;
+        border-radius: 26px;
+      }
+
+      .lavender-panel {
+        padding: 16px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .add-btn {
+        min-height: 48px;
+      }
+
+      .reminder-item {
+        grid-template-columns: auto 1fr;
+      }
+
+      .item-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-card" aria-labelledby="pageTitle">
+    <section class="header">
+      <h1 id="pageTitle">備忘提醒</h1>
+      <p>把今天的小任務溫柔地收好。</p>
+    </section>
+
+    <section class="lavender-panel" aria-label="備忘提醒輸入與清單">
+      <form class="input-row" id="reminderForm">
+        <input
+          type="text"
+          id="reminderInput"
+          placeholder="輸入一件備忘事項..."
+          autocomplete="off"
+          aria-label="備忘事項"
+        >
+        <button class="add-btn" type="submit">新增提醒</button>
+      </form>
+
+      <div class="list-area">
+        <p class="empty-message" id="emptyMessage">目前還沒有提醒喔。<br>新增一件小事開始吧！</p>
+        <ul class="reminder-list" id="reminderList" aria-live="polite"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div class="cat" aria-label="可愛的小貓咪" role="img">🐈‍⬛</div>
+
+  <script>
+    const form = document.getElementById("reminderForm");
+    const input = document.getElementById("reminderInput");
+    const list = document.getElementById("reminderList");
+    const emptyMessage = document.getElementById("emptyMessage");
+
+    function updateEmptyMessage() {
+      emptyMessage.style.display = list.children.length === 0 ? "block" : "none";
+    }
+
+    function createReminderItem(text) {
+      const item = document.createElement("li");
+      item.className = "reminder-item";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.setAttribute("aria-label", "標記為完成");
+
+      const reminderText = document.createElement("span");
+      reminderText.className = "reminder-text";
+      reminderText.textContent = text;
+
+      const actions = document.createElement("div");
+      actions.className = "item-actions";
+
+      const restoreButton = document.createElement("button");
+      restoreButton.type = "button";
+      restoreButton.className = "small-btn restore-btn";
+      restoreButton.textContent = "恢復";
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "small-btn delete-btn";
+      deleteButton.textContent = "刪除";
+
+      checkbox.addEventListener("change", () => {
+        item.classList.toggle("completed", checkbox.checked);
+      });
+
+      restoreButton.addEventListener("click", () => {
+        checkbox.checked = false;
+        item.classList.remove("completed");
+      });
+
+      deleteButton.addEventListener("click", () => {
+        item.remove();
+        updateEmptyMessage();
+      });
+
+      actions.append(restoreButton, deleteButton);
+      item.append(checkbox, reminderText, actions);
+
+      return item;
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const text = input.value.trim();
+      if (!text) {
+        return;
+      }
+
+      list.append(createReminderItem(text));
+      input.value = "";
+      input.focus();
+      updateEmptyMessage();
+    });
+
+    updateEmptyMessage();
+  </script>
+</body>
+</html>
